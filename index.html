@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>📱 الشاشة</h2>
+  <video id="remoteVideo" autoplay playsinline style="width:100%"></video>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const pc = new RTCPeerConnection();
+
+    pc.ontrack = (event) => {
+      document.getElementById("remoteVideo").srcObject = event.streams[0];
+    };
+
+    socket.on("offer", async (offer) => {
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("answer", answer);
+    });
+
+    socket.on("ice-candidate", (candidate) => {
+      pc.addIceCandidate(candidate);
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("ice-candidate", event.candidate);
+      }
+    };
+  </script>
+</body>
+</html>
